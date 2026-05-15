@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Tracker Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('https://images.pexels.com/photos/326281/pexels-photo-326281.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 12px white;
+            width: 500px;
+            position: absolute;
+            right: 80%;
+            left: 70%;
+            top: 20%; /* Adjusted to start lower and ensure visibility */
+            transform: translateX(-50%); /* Centered horizontally only */
+            text-align: center;
+            max-height: 80vh; /* Limits container height to prevent overflow */
+            overflow-y: auto; /* Adds scroll if content exceeds height */
+        }
+
+        button {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2E7D32, #4CAF50);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 0 32px black;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .food-input {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .suggestion {
+            background-color: #f0fff4;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #38a169;
+        }
+
+        .unhealthy {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+
+        .healthy {
+            color: #38a169;
+            font-weight: bold;
+        }
+
+        .rating {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        .healthy-rating {
+            background-color: #c6f6d5;
+            color: #22543d;
+        }
+
+        .moderate-rating {
+            background-color: #feebc8;
+            color: #9c4221;
+        }
+
+        .unhealthy-rating {
+            background-color: #fed7d7;
+            color: #9b2c2c;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .removeFoodEntryButton {
+            background: #e53e3e;
+            width: auto;
+            padding: 5px 10px;
+            margin-left: 10px;
+        }
+
+        .removeFoodEntryButton:hover {
+            background: #c53030;
+        }
+
+        .toggle-auth {
+            color: #4CAF50;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 15px;
+            display: block;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+
+        .logout-btn:hover {
+            background: linear-gradient(135deg, #c53030, #e53e3e);
+        }
+
+        .food-suggestions {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            z-index: 1000; 
+            position: absolute; 
+            width: calc(100% - 20px); 
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .quantity-unit {
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        .unit-selector {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .unit-option {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        .unit-option.selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- AUTH TOGGLE -->
+    <div id="authToggleContainer" class="container">
+        <h2 class="text-3xl font-bold mb-6">Food Tracker Pro</h2>
+        <button id="showLoginButton">Login</button>
+        <button id="showRegisterButton">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginContainer" class="container hidden">
+        <h2 class="text-3xl font-bold mb-6">Login</h2>
+        <form id="loginForm">
+            <input id="loginEmail" type="email" placeholder="Email" class="w-full border p-2 rounded" required><br><br>
+            <input id="loginPassword" type="password" placeholder="Password" class="w-full border p-2 rounded" required><br><br>
+            <button type="submit">Login</button>
+            <p id="loginError" class="text-red-500 mt-2"></p>
+        </form>
+        <span class="toggle-auth" id="showRegisterLink">Don't have an account? Register here</span>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerContainer" class="container hidden">
+        <h2 class="text-3xl font-bold mb-6">Register</h2>
+        <form id="registerForm">
+            <input id="registerName" type="text" placeholder="Full Name" class="w-full border p-2 rounded" required><br><br>
+            <input id="registerEmail" type="email" placeholder="Email" class="w-full border p-2 rounded" required><br><br>
+            <input id="registerPassword" type="password" placeholder="Password" class="w-full border p-2 rounded" required><br><br>
+            <input id="registerConfirmPassword" type="password" placeholder="Confirm Password" class="w-full border p-2 rounded" required><br><br>
+            <button type="submit">Register</button>
+            <p id="registerError" class="text-red-500 mt-2"></p>
+        </form>
+        <span class="toggle-auth" id="showLoginLink">Already have an account? Login here</span>
+    </div>
+
+    <!-- CHOICE -->
+    <div id="choiceContainer" class="container hidden">
+        <h2 class="text-2xl font-bold mb-6">Welcome, <span id="userName"></span></h2>
+        <button id="nutritionalInfoButton">Get Nutritional Info</button>
+        <button id="foodTrackingButton">Track Consumed Food</button>
+        <button id="logoutButton" class="logout-btn mt-6">Logout</button>
+    </div>
+
+    <!-- NUTRITIONAL INFO -->
+    <div id="nutritionalInfoSection" class="container hidden">
+        <h2 class="text-2xl font-bold mb-4">Nutritional Info</h2>
+        <input id="foodInput" type="text" placeholder="Enter food name" class="border p-2 rounded" autocomplete="off">
+        <div id="foodSuggestions" class="food-suggestions hidden"></div>
+        <div class="flex items-center">
+            <input id="quantityInput" type="number" placeholder="Quantity" class="border p-2 rounded flex-grow" min="0">
+            <span id="quantityUnit" class="quantity-unit">grams</span>
+        </div>
+        <button id="foodInfoButton">Get Info</button>
+        <div id="foodInfoDisplay" class="mt-4 text-left p-4 bg-white rounded-lg"></div>
+        <button id="backToChoiceNutritional" class="mt-4">Back</button>
+    </div>
+
+    <!-- FOOD TRACKING -->
+    <div id="foodTrackingSection" class="container hidden">
+        <h2 class="text-2xl font-bold mb-4">Track Consumed Food</h2>
+        <div id="foodEntries"></div>
+        <button id="addFoodEntryButton">Add Food Item</button>
+        <button id="addFoodButton">Calculate Nutrition</button>
+        <div class="mt-4 bg-white p-4 rounded-lg">
+            <h3 class="font-bold mb-2">Consumed Foods</h3>
+            <ul id="consumedList" class="mb-4"></ul>
+            <p class="font-bold">Total Calories: <span id="totalCalories">0</span> kcal</p>
+        </div>
+        <div id="healthSuggestions" class="mt-4"></div>
+        <button id="backToChoiceTracking" class="mt-4">Back</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // ======================
+            // Database Simulation
+            // ======================
+            if (!localStorage.getItem('foodTrackerUsers')) {
+                localStorage.setItem('foodTrackerUsers', JSON.stringify([]));
+            }
+
+            if (!localStorage.getItem('foodTrackerFoods')) {
+                const foods = [
+                    // Foods measured by quantity (whole items)
+                    { name: 'apple', calories: 95, protein: 0.3, carbs: 25, fat: 0.3, healthRating: 5, unit: 'quantity' },
+                    { name: 'banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.3, healthRating: 5, unit: 'quantity' },
+                    { name: 'orange', calories: 62, protein: 1.2, carbs: 15, fat: 0.2, healthRating: 5, unit: 'quantity' },
+                    { name: 'egg', calories: 68, protein: 5.5, carbs: 0.6, fat: 4.8, healthRating: 4, unit: 'quantity' },
+                    
+                    // Foods measured by serving
+                    { name: 'ice cream', calories: 207, protein: 3.5, carbs: 24, fat: 11, healthRating: 2, unit: 'serving' },
+                    { name: 'big mac', calories: 563, protein: 25, carbs: 43, fat: 33, healthRating: 1, unit: 'serving' },
+                    { name: 'french fries', calories: 365, protein: 4, carbs: 48, fat: 17, healthRating: 1, unit: 'serving' },
+                    { name: 'chicken pizza', calories: 285, protein: 12, carbs: 36, fat: 10, healthRating: 2, unit: 'serving' },
+                    
+                    // Foods measured by grams (default)
+                    { name: 'chicken breast', calories: 165, protein: 31, carbs: 0, fat: 3.6, healthRating: 4, unit: 'grams' },
+                    { name: 'salmon', calories: 208, protein: 20, carbs: 0, fat: 13, healthRating: 5, unit: 'grams' },
+                    { name: 'broccoli', calories: 55, protein: 3.7, carbs: 11, fat: 0.6, healthRating: 5, unit: 'grams' },
+                    { name: 'spinach', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, healthRating: 5, unit: 'grams' },
+                    { name: 'rice (white)', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, healthRating: 3, unit: 'grams' },
+                    { name: 'rice (brown)', calories: 112, protein: 2.6, carbs: 24, fat: 0.9, healthRating: 4, unit: 'grams' },
+                    { name: 'quinoa', calories: 120, protein: 4.4, carbs: 21, fat: 1.9, healthRating: 5, unit: 'grams' },
+                    { name: 'tofu', calories: 76, protein: 8, carbs: 1.9, fat: 4.8, healthRating: 5, unit: 'grams' },
+                    { name: 'cheddar cheese', calories: 403, protein: 25, carbs: 1.3, fat: 33, healthRating: 2, unit: 'grams' },
+                    { name: 'greek yogurt', calories: 59, protein: 10, carbs: 3.6, fat: 0.4, healthRating: 5, unit: 'grams' }
+                ];
+                localStorage.setItem('foodTrackerFoods', JSON.stringify(foods));
+            }
+
+            // Healthy alternatives database
+            const healthyAlternatives = {
+                'big mac': ['grilled chicken sandwich', 'turkey burger', 'veggie burger'],
+                'french fries': ['baked sweet potato fries', 'roasted vegetables', 'kale chips'],
+                'soda': ['sparkling water', 'infused water', 'unsweetened iced tea'],
+                'chicken pizza': ['cauliflower crust pizza', 'whole wheat pizza with veggies', 'portobello mushroom pizza'],
+                'ice cream': ['frozen yogurt', 'banana nice cream', 'chia seed pudding']
+            };
+
+            // ======================
+            // Helper Functions
+            // ======================
+            
+            function getFoodData(foodName) {
+                const foods = JSON.parse(localStorage.getItem('foodTrackerFoods'));
+                return foods.find(item => item.name.toLowerCase() === foodName.toLowerCase()) || null;
+            }
+
+            function getHealthRatingClass(rating) {
+                if (rating >= 4) return 'healthy-rating';
+                if (rating >= 2.5) return 'moderate-rating';
+                return 'unhealthy-rating';
+            }
+
+            function getHealthRatingText(rating) {
+                if (rating >= 4) return 'Very Healthy';
+                if (rating >= 3) return 'Moderately Healthy';
+                if (rating >= 2) return 'Somewhat Unhealthy';
+                return 'Very Unhealthy';
+            }
+
+            function getHealthSuggestions(foodName) {
+                const alternatives = healthyAlternatives[foodName.toLowerCase()];
+                if (!alternatives) return null;
+                
+                let suggestions = '<div class="suggestion"><strong>Healthier Alternatives:</strong><ul>';
+                alternatives.forEach(alt => {
+                    suggestions += `<li>${alt}</li>`; // Removed the bullet symbol (?)
+                });
+                suggestions += '</ul></div>';
+                return suggestions;
+            }
+
+            // ======================
+            // UI Navigation
+            // ======================
+            
+            // Sections
+            const authToggleContainer = document.getElementById('authToggleContainer');
+            const loginContainer = document.getElementById('loginContainer');
+            const registerContainer = document.getElementById('registerContainer');
+            const choiceContainer = document.getElementById('choiceContainer');
+            const nutritionalInfoSection = document.getElementById('nutritionalInfoSection');
+            const foodTrackingSection = document.getElementById('foodTrackingSection');
+
+            // Buttons
+            const showLoginButton = document.getElementById('showLoginButton');
+            const showRegisterButton = document.getElementById('showRegisterButton');
+            const showLoginLink = document.getElementById('showLoginLink');
+            const showRegisterLink = document.getElementById('showRegisterLink');
+            const logoutButton = document.getElementById('logoutButton');
+            const nutritionalInfoButton = document.getElementById('nutritionalInfoButton');
+            const foodTrackingButton = document.getElementById('foodTrackingButton');
+            const backToChoiceButtonNutritional = document.getElementById('backToChoiceNutritional');
+            const backToChoiceButtonTracking = document.getElementById('backToChoiceTracking');
+            const foodEntriesDiv = document.getElementById('foodEntries');
+
+            function showAuthToggle() {
+                authToggleContainer.classList.remove('hidden');
+                loginContainer.classList.add('hidden');
+                registerContainer.classList.add('hidden');
+                choiceContainer.classList.add('hidden');
+                nutritionalInfoSection.classList.add('hidden');
+                foodTrackingSection.classList.add('hidden');
+            }
+
+            function showLogin() {
+                authToggleContainer.classList.add('hidden');
+                loginContainer.classList.remove('hidden');
+                registerContainer.classList.add('hidden');
+                choiceContainer.classList.add('hidden');
+                document.getElementById('loginError').textContent = '';
+            }
+
+            function showRegister() {
+                authToggleContainer.classList.add('hidden');
+                loginContainer.classList.add('hidden');
+                registerContainer.classList.remove('hidden');
+                choiceContainer.classList.add('hidden');
+                document.getElementById('registerError').textContent = '';
+            }
+
+            function showChoice() {
+                authToggleContainer.classList.add('hidden');
+                loginContainer.classList.add('hidden');
+                registerContainer.classList.add('hidden');
+                choiceContainer.classList.remove('hidden');
+                
+                // Display user's name
+                const currentUser = JSON.parse(localStorage.getItem('foodTrackerCurrentUser'));
+                if (currentUser) {
+                    document.getElementById('userName').textContent = currentUser.name;
+                }
+            }
+
+            // Event listeners for navigation
+            showLoginButton.addEventListener('click', showLogin);
+            showRegisterButton.addEventListener('click', showRegister);
+            showLoginLink.addEventListener('click', showLogin);
+            showRegisterLink.addEventListener('click', showRegister);
+
+            // Logout functionality
+            logoutButton.addEventListener('click', function() {
+                localStorage.removeItem('foodTrackerCurrentUser');
+                showAuthToggle();
+            });
+
+            // ======================
+            // Authentication
+            // ======================
+            
+            // Registration form
+            document.getElementById('registerForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                const errorDiv = document.getElementById('registerError');
+                
+                // Validation
+                if (password !== confirmPassword) {
+                    errorDiv.textContent = 'Passwords do not match';
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    errorDiv.textContent = 'Password must be at least 6 characters';
+                    return;
+                }
+                
+                // Check if user already exists
+                const users = JSON.parse(localStorage.getItem('foodTrackerUsers'));
+                const userExists = users.some(user => user.email === email);
+                
+                if (userExists) {
+                    errorDiv.textContent = 'User with this email already exists';
+                    return;
+                }
+                
+                // Create new user
+                const newUser = {
+                    id: Date.now().toString(),
+                    name,
+                    email,
+                    password 
+                };
+                
+                users.push(newUser);
+                localStorage.setItem('foodTrackerUsers', JSON.stringify(users));
+                
+                // Set as logged in user
+                localStorage.setItem('foodTrackerCurrentUser', JSON.stringify(newUser));
+                showChoice();
+                
+                // Clear form
+                document.getElementById('registerForm').reset();
+            });
+
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                const errorDiv = document.getElementById('loginError');
+                
+                // Check credentials
+                const users = JSON.parse(localStorage.getItem('foodTrackerUsers'));
+                const user = users.find(user => user.email === email && user.password === password);
+                
+                if (user) {
+                    localStorage.setItem('foodTrackerCurrentUser', JSON.stringify(user));
+                    showChoice();
+                    document.getElementById('loginForm').reset();
+                } else {
+                    errorDiv.textContent = 'Invalid email or password';
+                }
+            });
+
+            // Check if user is already logged in
+            if (localStorage.getItem('foodTrackerCurrentUser')) {
+                showChoice();
+            } else {
+                showAuthToggle();
+            }
+
+            // ======================
+            // Food Tracking Features
+            // ======================
+            
+            // Navigation Logic
+            nutritionalInfoButton.addEventListener('click', function () {
+                choiceContainer.classList.add('hidden');
+                nutritionalInfoSection.classList.remove('hidden');
+            });
+
+            foodTrackingButton.addEventListener('click', function () {
+                choiceContainer.classList.add('hidden');
+                foodTrackingSection.classList.remove('hidden');
+            });
+
+            backToChoiceButtonNutritional.addEventListener('click', function () {
+                nutritionalInfoSection.classList.add('hidden');
+                choiceContainer.classList.remove('hidden');
+            });
+
+            backToChoiceButtonTracking.addEventListener('click', function () {
+                foodTrackingSection.classList.add('hidden');
+                choiceContainer.classList.remove('hidden');
+            });
+
+            // Food Info - Nutritional Info Section
+            const foodInput = document.getElementById('foodInput');
+            const foodSuggestions = document.getElementById('foodSuggestions');
+            const quantityInput = document.getElementById('quantityInput');
+            const quantityUnit = document.getElementById('quantityUnit');
+
+            foodInput.addEventListener('input', () => {
+                const inputValue = foodInput.value.toLowerCase();
+                const foods = JSON.parse(localStorage.getItem('foodTrackerFoods'));
+                const filteredFoods = foods.filter(item => item.name.toLowerCase().includes(inputValue));
+                
+                foodSuggestions.innerHTML = '';
+                if (filteredFoods.length > 0 && inputValue !== '') {
+                    filteredFoods.forEach(food => {
+                        const suggestionItem = document.createElement('div');
+                        suggestionItem.textContent = food.name;
+                        suggestionItem.classList.add('suggestion-item', 'p-2', 'cursor-pointer');
+                        suggestionItem.addEventListener('click', () => {
+                            foodInput.value = food.name;
+                            quantityUnit.textContent = food.unit || 'grams';
+                            foodSuggestions.innerHTML = '';
+                        });
+                        foodSuggestions.appendChild(suggestionItem);
+                    });
+                    foodSuggestions.classList.remove('hidden');
+                } else {
+                    foodSuggestions.classList.add('hidden');
+                    quantityUnit.textContent = 'grams';
+                }
+            });
+
+            // Get Info Button - Nutritional Info Section
+            document.getElementById('foodInfoButton').addEventListener('click', function() {
+                const foodName = foodInput.value;
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const unit = quantityUnit.textContent;
+                const foodData = getFoodData(foodName);
+                const infoDisplay = document.getElementById('foodInfoDisplay');
+
+                infoDisplay.innerHTML = '';
+
+                if (quantity <= 0) {
+                    infoDisplay.innerHTML = '<p class="text-red-500">Please enter a valid quantity (greater than 0).</p>';
+                    return;
+                }
+
+                if (foodData) {
+                    let displayQuantity = quantity;
+                    let displayUnit = unit;
+                    
+                    // For quantity items, round to whole numbers
+                    if (unit === 'quantity') {
+                        displayQuantity = Math.round(quantity);
+                    }
+                    
+                    // Calculate nutritional values
+                    let calories, protein, carbs, fat;
+                    
+                    if (unit === 'quantity' || unit === 'serving') {
+                        // Use values directly for whole items or servings
+                        calories = (foodData.calories * quantity).toFixed(1);
+                        protein = (foodData.protein * quantity).toFixed(1);
+                        carbs = (foodData.carbs * quantity).toFixed(1);
+                        fat = (foodData.fat * quantity).toFixed(1);
+                    } else {
+                        // For grams, calculate based on 100g
+                        const multiplier = quantity / 100;
+                        calories = (foodData.calories * multiplier).toFixed(1);
+                        protein = (foodData.protein * multiplier).toFixed(1);
+                        carbs = (foodData.carbs * multiplier).toFixed(1);
+                        fat = (foodData.fat * multiplier).toFixed(1);
+                    }
+                    
+                    const ratingClass = getHealthRatingClass(foodData.healthRating);
+                    const ratingText = getHealthRatingText(foodData.healthRating);
+                    
+                    let infoHTML = `
+                        <h3 class="font-bold text-xl">${foodName.charAt(0).toUpperCase() + foodName.slice(1)} (${displayQuantity} ${displayUnit})</h3>
+                        <p>Calories: ${calories} kcal</p>
+                        <p>Protein: ${protein}g</p>
+                        <p>Carbohydrates: ${carbs}g</p>
+                        <p>Fat: ${fat}g</p>
+                        <p>Health Rating: <span class="rating ${ratingClass}">${ratingText}</span></p>
+                    `;
+                    
+                    const suggestions = getHealthSuggestions(foodName);
+                    if (suggestions) infoHTML += suggestions;
+                    
+                    infoDisplay.innerHTML = infoHTML;
+                } else {
+                    infoDisplay.innerHTML = `<p class="text-red-500">Food not found in database. Please try another food item.</p>`;
+                }
+            });
+
+            // Food Tracking Logic
+            const createFoodEntry = () => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'food-input mb-3';
+                entryDiv.innerHTML = `
+                    <input type="text" placeholder="Food name" class="food-name border p-2 rounded w-full mb-2">
+                    <div class="food-suggestions hidden"></div>
+                    <div class="flex items-center">
+                        <input type="number" placeholder="Quantity" class="food-quantity border p-2 rounded flex-grow" min="0">
+                        <span class="food-unit quantity-unit">grams</span>
+                    </div>
+                    <button class="removeFoodEntryButton mt-2">Remove</button>
+                `;
+                foodEntriesDiv.appendChild(entryDiv);
+                
+                const foodNameInput = entryDiv.querySelector('.food-name');
+                const suggestionsDiv = entryDiv.querySelector('.food-suggestions');
+                const foodUnitSpan = entryDiv.querySelector('.food-unit');
+
+                foodNameInput.addEventListener('input', () => {
+                    const inputValue = foodNameInput.value.toLowerCase();
+                    const foods = JSON.parse(localStorage.getItem('foodTrackerFoods'));
+                    const filteredFoods = foods.filter(item => item.name.toLowerCase().includes(inputValue));
+                    
+                    suggestionsDiv.innerHTML = '';
+                    if (filteredFoods.length > 0 && inputValue !== '') {
+                        filteredFoods.forEach(food => {
+                            const suggestionItem = document.createElement('div');
+                            suggestionItem.textContent = food.name;
+                            suggestionItem.classList.add('suggestion-item', 'p-2', 'cursor-pointer');
+                            suggestionItem.addEventListener('click', () => {
+                                foodNameInput.value = food.name;
+                                foodUnitSpan.textContent = food.unit || 'grams';
+                                suggestionsDiv.innerHTML = '';
+                            });
+                            suggestionsDiv.appendChild(suggestionItem);
+                        });
+                        suggestionsDiv.classList.remove('hidden');
+                    } else {
+                        suggestionsDiv.classList.add('hidden');
+                        foodUnitSpan.textContent = 'grams';
+                    }
+                });
+
+                entryDiv.querySelector('.removeFoodEntryButton').addEventListener('click', function () {
+                    foodEntriesDiv.removeChild(entryDiv);
+                });
+            };
+
+            document.getElementById('addFoodEntryButton').addEventListener('click', createFoodEntry);
+            
+            document.getElementById('addFoodButton').addEventListener('click', function() {
+                const foodEntries = foodEntriesDiv.querySelectorAll('.food-input');
+                let totalCalories = 0;
+                const consumedList = document.getElementById('consumedList');
+                const healthSuggestions = document.getElementById('healthSuggestions');
+
+                consumedList.innerHTML = '';
+                healthSuggestions.innerHTML = '';
+
+                foodEntries.forEach(entry => {
+                    const foodName = entry.querySelector('.food-name').value;
+                    const quantity = parseFloat(entry.querySelector('.food-quantity').value) || 0;
+                    const unit = entry.querySelector('.food-unit').textContent;
+                    const foodData = getFoodData(foodName);
+
+                    if (quantity <= 0) {
+                        entry.querySelector('.food-quantity').classList.add('text-red-500');
+                        return;
+                    }
+
+                    if (foodData) {
+                        let displayQuantity = quantity;
+                        let displayUnit = unit;
+                        
+                        if (unit === 'quantity') {
+                            displayQuantity = Math.round(quantity);
+                        }
+                        
+                        let calories;
+                        if (unit === 'quantity' || unit === 'serving') {
+                            calories = foodData.calories * quantity;
+                        } else {
+                            calories = foodData.calories * (quantity / 100);
+                        }
+                        
+                        totalCalories += calories;
+
+                        const ratingClass = getHealthRatingClass(foodData.healthRating);
+                        const ratingText = getHealthRatingText(foodData.healthRating);
+
+                        const li = document.createElement('li');
+                        li.className = 'mb-2';
+                        li.innerHTML = `
+                            ${displayQuantity} ${displayUnit} ${foodName} - ${calories.toFixed(1)} kcal 
+                            <span class="rating ${ratingClass}">${ratingText}</span>
+                        `;
+                        consumedList.appendChild(li);
+
+                        if (foodData.healthRating < 2.5) {
+                            const suggestions = getHealthSuggestions(foodName);
+                            if (suggestions) healthSuggestions.innerHTML += suggestions;
+                        }
+                    } else {
+                        entry.querySelector('.food-name').classList.add('text-red-500');
+                    }
+                });
+
+                document.getElementById('totalCalories').textContent = totalCalories.toFixed(1);
+            });
+        });
+    </script>
+</body>
+</html>
